@@ -13,6 +13,57 @@ DEVICES=(
     HeaterController
     WindowController
 )
+GET_CONNECTION_STRINGS=
+
+function usage() {
+    echo -n "Usage: $(basename "$0") [OPTION]...
+
+Options:
+    -r, --resource-group-name       Name of the resource group (default is '$RESOURCE_GROUP_NAME').
+    -l, --location                  Location of the resource group (for creation, default is '$LOCATION').
+    -i, --iot-hub-name              Name of the IoT Hub (default is '$IOT_HUB_NAME').
+    -s, --sku                       SKU of the IoT Hub (for creation, default is '$SKU').
+    -g, --get-connection-strings    Only regenerate the connection strings file.
+    -h, --help                      Show this help.
+"
+}
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+        -r|--resource-group-name)
+            RESOURCE_GROUP_NAME="$2"
+            shift 2
+            ;;
+        -l|--location)
+            LOCATION="$2"
+            shift 2
+            ;;
+        -i|--iot-hub-name)
+            IOT_HUB_NAME="$2"
+            shift 2
+            ;;
+        -s|--sku)
+            SKU="$2"
+            shift 2
+            ;;
+        -g|--get-connection-strings)
+            GET_CONNECTION_STRINGS=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)  # unknown arguments
+            echo -e "\e[91merror: unknown argument '$1'\e[39m" >/dev/stderr
+            usage
+            exit 1
+            ;;
+    esac
+done
 
 function create_resource_group() {
     if [ $(az group exists -g $RESOURCE_GROUP_NAME) = false ]; then
@@ -54,7 +105,32 @@ function register_devices() {
     done
 }
 
-create_resource_group
-create_iot_hub
-register_devices
+function configure_azure() {
+    create_resource_group
+    create_iot_hub
+    register_devices
+}
 
+function get_connection_strings() {
+    declare -A already_registered_devices
+    get_registered_devices already_registered_devices
+
+    # open connection strings file for writing (override)
+    exec 3>"$DEVICE_CONNECTION_STRINGS_FILE"
+
+    local device
+    for device in ${!already_registered_devices[@]}
+    do
+        echo "add connection string for '$device' to '$DEVICE_CONNECTION_STRINGS_FILE'"
+        az iot hub device-identity show-connection-string -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME -d $device -o tsv | tee -a /dev/fd/3
+    done
+
+    # close file
+    exec 3>&-
+}
+
+if [ -z $GET_CONNECTION_STRINGS ]; then
+    configure_azure
+else
+    get_connection_strings
+fi
