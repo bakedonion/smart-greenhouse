@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+RESOURCE_GROUP_NAME=smart-greenhouse
+LOCATION=westeurope
+
+if [ $(az group exists -g $RESOURCE_GROUP_NAME) = false ]; then
+    echo "create resource group '$RESOURCE_GROUP_NAME' for '$LOCATION'"
+    az group create -g $RESOURCE_GROUP_NAME -l $LOCATION
+fi
+
