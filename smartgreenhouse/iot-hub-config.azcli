@@ -2,9 +2,16 @@
 
 RESOURCE_GROUP_NAME=smart-greenhouse
 LOCATION=westeurope
+IOT_HUB_NAME=smart-greenhouse-iot-hub
+SKU=F1
 
 if [ $(az group exists -g $RESOURCE_GROUP_NAME) = false ]; then
     echo "create resource group '$RESOURCE_GROUP_NAME' for '$LOCATION'"
     az group create -g $RESOURCE_GROUP_NAME -l $LOCATION
+fi
+
+if ! az iot hub show -n $IOT_HUB_NAME >/dev/null 2>&1; then
+    echo "create iot hub '$IOT_HUB_NAME' with pricing tier '$SKU' in resource group '$RESOURCE_GROUP_NAME'"
+    az iot hub create -n $IOT_HUB_NAME -g $RESOURCE_GROUP_NAME --sku $SKU
 fi
 
