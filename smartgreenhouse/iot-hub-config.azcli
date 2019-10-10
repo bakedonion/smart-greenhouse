@@ -1,17 +1,60 @@
 #!/usr/bin/env bash
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null && pwd)"
+DEVICE_CONNECTION_STRINGS_FILE="$DIR/telemetry/device-connection-strings"
 RESOURCE_GROUP_NAME=smart-greenhouse
 LOCATION=westeurope
 IOT_HUB_NAME=smart-greenhouse-iot-hub
 SKU=F1
+DEVICES=(
+    SoilSensorsDevice-1     SoilSensorsDevice-2
+    AirSensorsDevice
+    IrrigationController-1  IrrigationController-2
+    HeaterController
+    WindowController
+)
 
-if [ $(az group exists -g $RESOURCE_GROUP_NAME) = false ]; then
-    echo "create resource group '$RESOURCE_GROUP_NAME' for '$LOCATION'"
-    az group create -g $RESOURCE_GROUP_NAME -l $LOCATION
-fi
+function create_resource_group() {
+    if [ $(az group exists -g $RESOURCE_GROUP_NAME) = false ]; then
+        echo "create resource group '$RESOURCE_GROUP_NAME' for '$LOCATION'"
+        az group create -g $RESOURCE_GROUP_NAME -l $LOCATION
+    fi
+}
 
-if ! az iot hub show -n $IOT_HUB_NAME >/dev/null 2>&1; then
-    echo "create iot hub '$IOT_HUB_NAME' with pricing tier '$SKU' in resource group '$RESOURCE_GROUP_NAME'"
-    az iot hub create -n $IOT_HUB_NAME -g $RESOURCE_GROUP_NAME --sku $SKU
-fi
+function create_iot_hub() {
+    if ! az iot hub show -n $IOT_HUB_NAME >/dev/null 2>&1; then
+        echo "create iot hub '$IOT_HUB_NAME' with pricing tier '$SKU' in resource group '$RESOURCE_GROUP_NAME'"
+        az iot hub create -n $IOT_HUB_NAME -g $RESOURCE_GROUP_NAME --sku $SKU
+    fi
+}
+
+function get_registered_devices() {
+    local -n devices=$1
+
+    while IFS= read -r device
+    do
+        devices["$device"]=
+    done < <(az iot hub device-identity list -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME --query '[][deviceId]' -o tsv)
+}
+
+function register_devices() {
+    declare -A already_registered_devices
+    get_registered_devices already_registered_devices
+
+    # register all unregistered devices
+    for device in "${DEVICES[@]}"
+    do
+        if [[ ! -v already_registered_devices["$device"] ]]; then
+            echo "register device '$device' at iot hub '$IOT_HUB_NAME' in resource group '$RESOURCE_GROUP_NAME'"
+            az iot hub device-identity create -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME -d $device
+
+            echo "add connection string for '$device' to '$DEVICE_CONNECTION_STRINGS_FILE'"
+            az iot hub device-identity show-connection-string -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME -d $device -o tsv | tee -a "$DEVICE_CONNECTION_STRINGS_FILE"
+        fi
+    done
+}
+
+create_resource_group
+create_iot_hub
+register_devices
 
