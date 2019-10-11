@@ -204,3 +204,52 @@ class SoilSensorsDevice(SensorDevice):
 
         self.send_msg(msg)
 
+
+class AirSensorsDevice(SensorDevice):
+    """
+    Simulates a device with different sensors to measure relative air humidity
+    and temperature.
+    """
+
+    # base values for sensor data to mock measurements
+    base_humidity = 35
+    base_temperature = 22
+
+    def get_relative_air_humidity(self) -> int:
+        """
+        Gets the reading from the sensor, that measures the relative air
+        humidity in percent.
+
+        ---
+
+        Returns:
+            relative_air_humidity_in_percent
+        """
+        return self.base_humidity + random.randint(0, 35)
+
+    def get_temperature(self) -> float:
+        """
+        Gets the reading from the sensor, that measures the temperature in
+        celcius.
+
+        ---
+
+        Returns:
+            temperature_in_celsius
+        """
+        return round(self.base_temperature + random.random() * 10, 1)
+
+    def send_data(self):
+        humidity_in_percent = self.get_relative_air_humidity()
+        temperature_in_celsius = self.get_temperature()
+
+        msg = json.dumps({
+            'info_group': 'general-info',
+            'measurements': {
+                'relative_air_humidity_in_percent': humidity_in_percent,
+                'temperature_in_celsius': temperature_in_celsius
+            }
+        })
+
+        self.send_msg(msg)
+
