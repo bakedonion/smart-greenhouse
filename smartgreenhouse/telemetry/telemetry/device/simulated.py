@@ -2,13 +2,32 @@
 This module provides a selection of simulated devices, that can communicate
 with an Azure IoT Hub.
 
+---
+
+Functions:
+    initiate_shutdown(): Sets the flag 'shutdown_initiated'.
+
+Module variables:
+    shutdown_initiated: A flag (threading.Event), that can be set to initiate the shutdown of all devices.
+    sleep_timer: All device threads sleep this long each loop or wait at most this long for a command.
 """
 
 import threading
 import datetime
 import logging
+import time
 
 from azure.iot.device import IoTHubDeviceClient, Message
+
+shutdown_initiated = threading.Event()
+sleep_timer = 0.1
+
+
+def initiate_shutdown():
+    """
+    Sets the shutdown flag.
+    """
+    shutdown_initiated.set()
 
 
 class Device(threading.Thread):
@@ -86,4 +105,32 @@ class Device(threading.Thread):
         self.client.send_message(msg)
 
         self.logger.info(msg)
+
+
+class SensorDevice(Device):
+    """
+    Abstract base class for a simulated a device, that is mainly used to send
+    measurements in shorter intervals to the hub.
+    """
+
+    def __init__(self, device_id: str, connection_string: str, interval_in_secs: int = 5):
+        super().__init__(device_id, connection_string, interval_in_secs)
+
+    def run_loop(self):
+        """
+        Calls send_data() every interval_in_secs seconds.
+        """
+        while not shutdown_initiated.is_set():
+            if (datetime.datetime.now() - self.last_msg_at).total_seconds() >= self.interval_in_secs:
+                self.send_data()
+                self.last_msg_at = datetime.datetime.now()
+
+            time.sleep(sleep_timer)
+
+    def send_data(self):
+        """
+        Sends the devices sensor data to the hub. Can be implemented in a
+        subclass.
+        """
+        pass
 
