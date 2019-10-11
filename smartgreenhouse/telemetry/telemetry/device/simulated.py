@@ -19,7 +19,7 @@ import random
 import time
 import json
 
-from azure.iot.device import IoTHubDeviceClient, Message
+from azure.iot.device import IoTHubDeviceClient, Message, MethodRequest, MethodResponse
 
 shutdown_initiated = threading.Event()
 sleep_timer = 0.1
@@ -83,6 +83,9 @@ class Device(threading.Thread):
         Prints info about starting and stopping of the device to console and
         calls run_loop().
         """
+        # start thread to handle commands from the hub
+        threading.Thread(target=self.recv_command, name=self.name).start()
+
         self.logger.info('starting')
         self.run_loop()
         self.logger.info('shutdown')
@@ -107,6 +110,46 @@ class Device(threading.Thread):
         self.client.send_message(msg)
 
         self.logger.info(msg)
+
+    def recv_command(self):
+        """
+        Waits for a command from the Azure IoT Hub and calls the desired method,
+        if it exists.
+        """
+        while self.is_alive():
+            method_request: MethodRequest = self.client.receive_method_request(
+                timeout=sleep_timer)
+
+            if method_request:
+                if hasattr(self, method_request.name):
+                    try:
+                        result = getattr(self, method_request.name)(
+                            method_request, **method_request.payload)
+
+                        status = 200
+                        payload = {
+                            'Response': f"Executed direct method '{method_request.name}'.",
+                        }
+
+                        if result:
+                            payload['Result'] = result
+                    except TypeError as err:
+                        status = 400
+                        payload = {
+                            'Response': f"Invalid parameter: {err}."
+                        }
+                else:
+                    status = 404
+                    payload = {
+                        'Response': f"Direct method '{method_request.name}' not defined."
+                    }
+
+                payload['Device'] = self.name
+                payload['Method'] = method_request.name
+
+                response = MethodResponse(
+                    method_request.request_id, status, payload)
+                self.client.send_method_response(response)
 
 
 class SensorDevice(Device):
