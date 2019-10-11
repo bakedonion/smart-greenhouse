@@ -15,7 +15,9 @@ Module variables:
 import threading
 import datetime
 import logging
+import random
 import time
+import json
 
 from azure.iot.device import IoTHubDeviceClient, Message
 
@@ -150,4 +152,55 @@ class ControllerDevice(Device):
     def run_loop(self):
         while not shutdown_initiated.is_set():
             time.sleep(sleep_timer)
+
+
+class SoilSensorsDevice(SensorDevice):
+    """
+    Simulates a device with different sensors to measure soil quality.
+    Measures the soil's humidity/moisture and pH.
+    """
+
+    # base values for sensor data to mock measurements
+    base_vwc = 32
+    base_pH = 5.4
+
+    def get_soil_humidity(self) -> int:
+        """
+        Gets the reading from the sensor, that measures the soil's volumetric
+        water content in percent.
+
+        ---
+
+        Returns:
+            vwc_in_percent
+        """
+        self.base_vwc = self.base_vwc - random.randint(1, 3)
+        return self.base_vwc
+
+    def get_soil_pH(self) -> float:
+        """
+        Gets the reading from the sensor, that measures the soil's pH..
+
+        ---
+
+        Returns:
+            pH
+        """
+        return round(SoilSensorsDevice.base_pH + random.random() * 1.4, 1)
+
+    def send_data(self):
+        _, _, garden_bed_num = self.device_id.rpartition('-')
+
+        vwc_in_percent = self.get_soil_humidity()
+        pH = self.get_soil_pH()
+
+        msg = json.dumps({
+            'info_group': f'garden-bed-{garden_bed_num}',
+            'measurements': {
+                'vwc_in_percent': vwc_in_percent,
+                'pH': pH
+            }
+        })
+
+        self.send_msg(msg)
 
