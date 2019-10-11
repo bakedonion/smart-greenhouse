@@ -134,3 +134,20 @@ class SensorDevice(Device):
         """
         pass
 
+
+class ControllerDevice(Device):
+    """
+    Abstract base class for a simulated a device, that is mainly used to
+    control a physical object, based on commands received from the hub.
+
+    It normally only sends a message to the hub, to notify succesful
+    execution of commands or when it encounters a problem.
+    """
+
+    def __init__(self, device_id: str, connection_string: str, interval_in_secs: int = 15):
+        super().__init__(device_id, connection_string, interval_in_secs)
+
+    def run_loop(self):
+        while not shutdown_initiated.is_set():
+            time.sleep(sleep_timer)
+
