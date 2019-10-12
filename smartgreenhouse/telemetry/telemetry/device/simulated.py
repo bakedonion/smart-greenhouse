@@ -296,3 +296,40 @@ class AirSensorsDevice(SensorDevice):
 
         self.send_msg(msg)
 
+
+class IrrigationController(ControllerDevice):
+    """
+    Simulates a device, that controls an irrigation system based on commands
+    it receives from the hub.
+    """
+
+    def turn_on(self, method_request: MethodRequest, duration_in_min: int = 0):
+        """
+        Turns on the irrigation system.
+
+        Args:
+            method_request: The direct method request from the hub.
+            duration_in_min: Duration in minutes, to turn on the system.
+        """
+        _, _, garden_bed_num = self.device_id.rpartition('-')
+
+        msg = json.dumps({
+            'method_name': method_request.name,
+            'duration_in_min': duration_in_min
+        })
+
+        self.logger.info(msg)
+
+    def turn_off(self, method_request: MethodRequest):
+        """
+        Turns off the irrigation system.
+
+        Args:
+            method_request: The direct method request from the hub.
+        """
+        msg = json.dumps({
+            'method_name': method_request.name
+        })
+
+        self.logger.info(msg)
+
