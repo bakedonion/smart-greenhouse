@@ -231,6 +231,21 @@ class SoilSensorsDevice(SensorDevice):
         """
         return round(SoilSensorsDevice.base_pH + random.random() * 1.4, 1)
 
+    def reset_soil_humidity(self, method_request: MethodRequest):
+        """
+        Resets the soil's humidity to simulate irrigation.
+
+        Args:
+            method_request: The direct method request from the hub.
+        """
+        self.base_vwc = SoilSensorsDevice.base_vwc + random.randint(0, 5)
+
+        msg = json.dumps({
+            'method_name': method_request.name
+        })
+
+        self.logger.info(msg)
+
     def send_data(self):
         _, _, garden_bed_num = self.device_id.rpartition('-')
 
