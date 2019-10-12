@@ -383,3 +383,37 @@ class HeaterController(ControllerDevice):
 
         self.logger.info(msg)
 
+
+class WindowController(ControllerDevice):
+    """
+    Simulates a device, that controls a window opener based on commands it
+    receives from the hub.
+    """
+
+    def open(self, method_request: MethodRequest, duration_in_min: int = 0):
+        """
+        Opens the window.
+
+        Args:
+            method_request: The direct method request from the hub.
+            duration_in_min: Duration in minutes, to open the window.
+        """
+        msg = json.dumps({
+            'method_name': method_request.name,
+            'duration_in_min': duration_in_min
+        })
+
+        self.logger.info(msg)
+
+    def close(self, method_request: MethodRequest):
+        """
+        Closes the window.
+
+        Args:
+            method_request: The direct method request from the hub.
+        """
+        msg = json.dumps({
+            'method_name': method_request.name
+        })
+
+        self.logger.info(msg)
