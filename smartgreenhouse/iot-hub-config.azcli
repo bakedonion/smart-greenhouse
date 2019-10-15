@@ -2,6 +2,7 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null && pwd)"
 DEVICE_CONNECTION_STRINGS_FILE="$DIR/telemetry/device-connection-strings"
+EVENT_HUB_CONNECTION_STRING_FILE="$DIR/webapp/event-hub-connection-strings"
 RESOURCE_GROUP_NAME=smart-greenhouse
 LOCATION=westeurope
 IOT_HUB_NAME=smart-greenhouse-iot-hub
@@ -76,7 +77,21 @@ function create_iot_hub() {
     if ! az iot hub show -n $IOT_HUB_NAME >/dev/null 2>&1; then
         echo "create iot hub '$IOT_HUB_NAME' with pricing tier '$SKU' in resource group '$RESOURCE_GROUP_NAME'"
         az iot hub create -n $IOT_HUB_NAME -g $RESOURCE_GROUP_NAME --sku $SKU
+
+        echo "add default service event hub connection string for iot hub '$IOT_HUB_NAME' to '$EVENT_HUB_CONNECTION_STRING_FILE'"
+        get_default_event_hub_connection_string | tee $EVENT_HUB_CONNECTION_STRING_FILE
     fi
+}
+
+function get_default_event_hub_connection_string() {
+    local key_names=("Endpoint" "EntityPath" "SharedAccessKeyName" "SharedAccessKey")
+    local values
+    mapfile -t values < <(az iot hub show -g cloudeteer-demo -n smart-greenhouse --query 'properties.eventHubEndpoints.events.[endpoint, path]' -o tsv)
+    values+=("service")
+    values+=($(az iot hub policy show --hub-name smart-greenhouse --name service --query primaryKey -o tsv))
+    local connection_string=$(paste -d "=" <(printf "%s\n" "${key_names[@]}") <(printf "%s\n" "${values[@]}") | paste -sd ";")
+
+    echo "$connection_string"
 }
 
 function get_registered_devices() {
@@ -114,6 +129,9 @@ function configure_azure() {
 function get_connection_strings() {
     declare -A already_registered_devices
     get_registered_devices already_registered_devices
+
+    echo "add default service event hub connection string for iot hub '$IOT_HUB_NAME' to '$EVENT_HUB_CONNECTION_STRING_FILE'"
+    get_default_event_hub_connection_string | tee $EVENT_HUB_CONNECTION_STRING_FILE
 
     # open connection strings file for writing (override)
     exec 3>"$DEVICE_CONNECTION_STRINGS_FILE"
