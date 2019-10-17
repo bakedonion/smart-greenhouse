@@ -2,6 +2,7 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null && pwd)"
 DEVICE_CONNECTION_STRINGS_FILE="$DIR/telemetry/device-connection-strings"
+IOT_HUB_SERVICE_CONNECTION_STRING_FILE="$DIR/webapp/iot-hub-connection-strings"
 EVENT_HUB_CONNECTION_STRING_FILE="$DIR/webapp/event-hub-connection-strings"
 RESOURCE_GROUP_NAME=smart-greenhouse
 LOCATION=westeurope
@@ -78,6 +79,9 @@ function create_iot_hub() {
         echo "create iot hub '$IOT_HUB_NAME' with pricing tier '$SKU' in resource group '$RESOURCE_GROUP_NAME'"
         az iot hub create -n $IOT_HUB_NAME -g $RESOURCE_GROUP_NAME --sku $SKU
 
+        echo "add service connection string for iot hub '$IOT_HUB_NAME' to '$IOT_HUB_SERVICE_CONNECTION_STRING_FILE'"
+        az iot hub show-connection-string -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME --policy service -o tsv | tee $IOT_HUB_SERVICE_CONNECTION_STRING_FILE
+
         echo "add default service event hub connection string for iot hub '$IOT_HUB_NAME' to '$EVENT_HUB_CONNECTION_STRING_FILE'"
         get_default_event_hub_connection_string | tee $EVENT_HUB_CONNECTION_STRING_FILE
     fi
@@ -86,9 +90,9 @@ function create_iot_hub() {
 function get_default_event_hub_connection_string() {
     local key_names=("Endpoint" "EntityPath" "SharedAccessKeyName" "SharedAccessKey")
     local values
-    mapfile -t values < <(az iot hub show -g cloudeteer-demo -n smart-greenhouse --query 'properties.eventHubEndpoints.events.[endpoint, path]' -o tsv)
+    mapfile -t values < <(az iot hub show -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME --query 'properties.eventHubEndpoints.events.[endpoint, path]' -o tsv)
     values+=("service")
-    values+=($(az iot hub policy show --hub-name smart-greenhouse --name service --query primaryKey -o tsv))
+    values+=($(az iot hub policy show --hub-name $IOT_HUB_NAME --name service --query primaryKey -o tsv))
     local connection_string=$(paste -d "=" <(printf "%s\n" "${key_names[@]}") <(printf "%s\n" "${values[@]}") | paste -sd ";")
 
     echo "$connection_string"
@@ -129,6 +133,9 @@ function configure_azure() {
 function get_connection_strings() {
     declare -A already_registered_devices
     get_registered_devices already_registered_devices
+
+    echo "add service connection string for iot hub '$IOT_HUB_NAME' to '$IOT_HUB_SERVICE_CONNECTION_STRING_FILE'"
+    az iot hub show-connection-string -g $RESOURCE_GROUP_NAME -n $IOT_HUB_NAME --policy service -o tsv | tee $IOT_HUB_SERVICE_CONNECTION_STRING_FILE
 
     echo "add default service event hub connection string for iot hub '$IOT_HUB_NAME' to '$EVENT_HUB_CONNECTION_STRING_FILE'"
     get_default_event_hub_connection_string | tee $EVENT_HUB_CONNECTION_STRING_FILE
