@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{{ title }}</title>
+</head>
+
+<body>
+    <div class="page">
+        <header>
+            <div class="content">
+                <h1 id="page-title-big" class="page-title">{{ page_title }}</h1>
+                <h2 id="page-title" class="page-title">{{ page_title }}</h2>
+            </div>
+        </header>
+
+        <main>
+            <div class="content">
+                <form action="" method="post"></form>
+                <div class="greenhouse-info">
+                    <div id="general-info" class="greenhouse-general-info card card-highlight">
+                        <h3 class="card-heading">General</h3>
+                        <div class="measurements auto-fit-13ex-plus-6ch-1fr no-row-gap">
+                            <dl class="dl-oneline dl-align-13ex-6ch">
+                                <dt>Humidity</dt>
+                                <dd><span id="relative_air_humidity_in_percent">---</span>%</dd>
+                            </dl>
+                            <dl class="dl-oneline dl-align-13ex-6ch">
+                                <dt>Temperature</dt>
+                                <dd><span id="temperature_in_celsius">---</span>°C</dd>
+                            </dl>
+                            <dl class="dl-oneline dl-align-13ex-6ch">
+                                <dt>Heater</dt>
+                                <dd id="HeaterController" class="card-highlight">---</dd>
+                            </dl>
+                            <dl class="dl-oneline dl-align-13ex-6ch">
+                                <dt>Window</dt>
+                                <dd id="WindowController" class="card-highlight">---</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="garden-bed-info container auto-fit-13ex-plus-6ch-1fr">
+                        <div id="garden-bed-1" class="garden-bed card card-highlight">
+                            <h3 class="card-heading">Garden bed 1</h3>
+                            <div class="measurements center-max-content">
+                                <dl class="dl-oneline dl-align-max-content-6ch">
+                                    <dt>VWC</dt>
+                                    <dd><span id="vwc_in_percent-1">---</span>%</dd>
+                                    <dt>pH</dt>
+                                    <dd id="pH-1">---</dd>
+                                    <dt>Irrigation</dt>
+                                    <dd id="IrrigationController-1" class="card-highlight">---</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div id="garden-bed-2" class="garden-bed card card-highlight">
+                            <h3 class="card-heading">Garden bed 2</h3>
+                            <div class="measurements center-max-content">
+                                <dl class="dl-oneline dl-align-max-content-6ch">
+                                    <dt>VWC</dt>
+                                    <dd><span id="vwc_in_percent-2">---</span>%</dd>
+                                    <dt>pH</dt>
+                                    <dd id="pH-2">---</dd>
+                                    <dt>Irrigation</dt>
+                                    <dd id="IrrigationController-2" class="card-highlight">---</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="content">
+                <div class="contact-info">
+                    {%- if smart_greenhouse_contact_info -%}
+                    <h3 class="no-padding">Contact:</h3>
+                    <ul class="no-padding">
+                        {%- for key, value in smart_greenhouse_contact_info.items() -%}
+                        {%- set key = key.lower() -%}
+                        {%- if key == 'name' -%}
+                        {%- set smart_greenhouse_contact_info_email_name = value %}
+                        <li class="{{ key }}">{{ value }}</li>
+                        {%- elif key == 'github' %}
+                        <li class="{{ key }}"><a href="https://github.com/{{ value }}/" class="icon-link"
+                                target="_blank"><span class="icon github"></span>@{{ value }}</a></li>
+                        {%- elif key == 'email' %}
+                        <li class="{{ key }}"><a href="mailto:{{ value }}?subject=smart-greenhouse"
+                                class="icon-link"><span
+                                    class="icon email"></span>{% if smart_greenhouse_contact_info_email_name %}{{ smart_greenhouse_contact_info_email_name }}
+                                <{{ value }}>{% else %}{{ value }}{% endif %}</a></li>
+                        {%- endif -%}
+                        {%- endfor -%}
+                    </ul>
+                    {%- endif %}
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>
