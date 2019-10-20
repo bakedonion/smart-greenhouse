@@ -29,7 +29,8 @@ def initiate_shutdown():
 
 class SimpleMessageReceiver(threading.Thread):
     """
-    A simple class to receive messages sent to an Azure Even Hub.
+    A simple class to receive messages sent to an Azure Even Hub. If a flask-socketio is given it emits a new
+    measurements_update event over that socket.
     """
 
     def __init__(self, connection_string: str, handler_name: str = 'MessageReceiver', **kwargs: Mapping[str, Any]):
@@ -41,12 +42,16 @@ class SimpleMessageReceiver(threading.Thread):
         Args:
             connection_string: The connection string for the EventHub you wish to connect to.
             handler_name: Name of the handler.
-            kwargs: For further possibilities see threading.Thread.
+            kwargs: of note:
+                socketio: The socketio to use in conjunction with flask-socketio.
+                For further possibilities see threading.Thread.
         """
         super().__init__(name=handler_name, kwargs=kwargs)
 
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.NOTSET)
+
+        self.socketio = kwargs.get('socketio', None)
 
         self.event_hub_client = EventHubClient.from_connection_string(
             connection_string)
@@ -85,6 +90,19 @@ class SimpleMessageReceiver(threading.Thread):
             for event in events:
                 self.logger.info(
                     f'[Partition {consumer._partition:>{2}}]: {event.message}')
+
+                # if a socketio is given, emit a new event
+                if self.socketio:
+                    try:
+                        msg = event.body_as_json()
+
+                        self.socketio.emit('measurements_update', {
+                            'info_group': msg['info_group'],
+                            'measurements': msg['measurements']
+                        })
+                    except TypeError:
+                        # TODO filter some 'hello' messages from Azure?
+                        pass
 
         consumer.close()
 

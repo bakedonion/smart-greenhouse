@@ -1,8 +1,12 @@
 from webapp import app
+from webapp.routes import socketio
 from definitions import EVENT_HUB_CONNECTION_STRINGS
 from webapp.utils.azure import SimpleMessageReceiver
 import threading
 import logging
+import eventlet
+
+eventlet.monkey_patch()
 
 app_name = 'webapp'
 threading.current_thread().setName(app_name)
@@ -16,6 +20,10 @@ sh_formatter = logging.Formatter(
 sh.setFormatter(sh_formatter)
 logger.addHandler(sh)
 
+simple_message_receiver = SimpleMessageReceiver(
+    EVENT_HUB_CONNECTION_STRINGS['service'], socketio=socketio, daemon=True)
+simple_message_receiver.start()
+
 
 if __name__ == "__main__":
-    app.run()
+    socketio.run(app)
