@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 This module is used to simluate telemetry.
 """

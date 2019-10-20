@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from webapp import app
 from webapp.routes import socketio
 from definitions import EVENT_HUB_CONNECTION_STRINGS
