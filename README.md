@@ -1,6 +1,6 @@
 # Smart Greenhouse
 
-This project serves as a prove of concept. It is split up into two parts: _telemetry_ and _webapp_. _telemetry_ simulates IoT devices and send their mock data to an Azure IoT Hub. _webapp_ on the other hand presents the collected data in a simple webapp and showcases the use of direct method invocations.
+This project serves as a proof of concept. It is split up into two parts: _telemetry_ and _webapp_. _telemetry_ simulates IoT devices and send their mock data to an Azure IoT Hub. _webapp_ on the other hand presents the collected data in a simple webapp and showcases the use of direct method invocations.
 
 ## Requirements
 
